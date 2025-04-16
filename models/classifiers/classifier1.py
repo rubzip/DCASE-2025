@@ -4,7 +4,7 @@ from torch import nn
 class SimpleDNN(nn.Module):
     def __init__(self):
         super(SimpleDNN, self).__init__()
-        self.fc1 = nn.Linear(32, 32)
+        self.fc1 = nn.Linear(128, 32)
         self.fc2 = nn.Linear(32, 10)
         self.act = nn.ReLU()
 

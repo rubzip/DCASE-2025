@@ -45,7 +45,7 @@ class VGGish200k32(nn.Module):
         self.cnn5 = DepthwiseSeparableConv(64, 64, kernel_size=3, padding=1)
 
         self.fc1 = nn.Linear(768, 256)
-        self.fc2 = nn.Linear(256, 32)
+        self.fc2 = nn.Linear(256, 128)
         
     def forward(self, x):
         x = F.relu(self.cnn1(x))

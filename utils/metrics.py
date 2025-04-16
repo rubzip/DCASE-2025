@@ -13,21 +13,26 @@ def macro_class_accuracy_avg(y_true, y_pred, return_classwise=False):
         float: macro-averaged accuracy.
         dict: per-class accuracies (as floats).
     """
-    assert y_true.shape == y_pred.shape, "y_true and y_pred must have the same shape"
+    y_true_ = y_true
+    y_pred_ = y_pred
+    if isinstance(y_true, list):
+        y_true_ = torch.cat(y_true_, dim=0)
+        y_pred_ = torch.cat(y_pred_, dim=0)
+    assert y_true_.shape == y_pred_.shape, "y_true and y_pred must have the same shape"
     
-    classes = torch.unique(y_true)
+    classes = torch.unique(y_true_)
     accuracies = {}
 
     for cls in classes:
         # Mask to select all samples of the current class
-        cls_mask = (y_true == cls)
+        cls_mask = (y_true_ == cls)
         total = cls_mask.sum().item()
 
         if total == 0:
             acc = 0.0
         else:
             # Count correct predictions for this class
-            correct = (y_pred[cls_mask] == y_true[cls_mask]).sum().item()
+            correct = (y_pred_[cls_mask] == y_true_[cls_mask]).sum().item()
             acc = correct / total
 
         # Store accuracy for the current class
@@ -59,7 +64,7 @@ class CombinedLoss(nn.Module):
         self.alpha_e = alpha_e
         self.alpha_y = alpha_y
         self.e_loss_fn = nn.MSELoss() if e_loss_fn is None else e_loss_fn
-        self.y_loss_fn = nn.CrossEntropyLoss if y_loss_fn is None else y_loss_fn
+        self.y_loss_fn = nn.CrossEntropyLoss() if y_loss_fn is None else y_loss_fn
 
     def forward(self, e_pred, e_theor, y_pred, y_theor):
         """

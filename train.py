@@ -1,10 +1,10 @@
 import torch
 from torch import nn, optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 
 from models.abstract_model import AbstractModel
-from utils.combined_loss import CombinedLoss
-from utils.early_stopping import EarlyStopping
+from utils.metrics import CombinedLoss, macro_class_accuracy_avg
+from utils.torch_utils import EarlyStopping
 
 
 def train(
@@ -20,14 +20,18 @@ def train(
         batch_size=32,
         patience=10,
         num_epochs=100,
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         verbose=True):
     
     criterion = CombinedLoss(alpha_e=alpha_e, alpha_y=alpha_y, e_loss_fn=e_loss_fn, y_loss_fn=y_loss_fn)
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=l2)
     early_stopper = EarlyStopping(patience=patience, verbose=verbose, restore_best_weights=True)
 
-    train_loader = DataLoader([w_train, e_train, y_train], batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader([w_val, e_val, y_val], batch_size=batch_size, shuffle=False)
+    train_dataset = TensorDataset(w_train, e_train, y_train)
+    val_dataset = TensorDataset(w_val, e_val, y_val)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     for epoch in range(num_epochs):
         model.train()
@@ -52,7 +56,7 @@ def train(
             all_train_preds.append(predicted)
         
         avg_train_loss = train_loss / len(train_loader)
-        train_accuracy = (torch.cat(all_train_preds) == torch.cat(all_train_labels)).float().mean().item() * 100
+        train_accuracy = macro_class_accuracy_avg(all_train_labels, all_train_preds) * 100
 
         val_loss = 0.
         model.eval()
@@ -68,8 +72,9 @@ def train(
                 predicted = torch.argmax(outputs, dim=1)
                 all_val_labels.append(labels)
                 all_val_preds.append(predicted)
+        
         avg_val_loss = val_loss / len(val_loader)
-        val_accuracy = (torch.cat(all_val_preds) == torch.cat(all_val_labels)).float().mean().item() * 100
+        val_accuracy = macro_class_accuracy_avg(all_val_labels, all_val_preds) * 100
         
         if verbose:
             print(f"Epoch [{epoch+1}/{num_epochs}] | "

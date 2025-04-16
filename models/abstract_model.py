@@ -27,4 +27,4 @@ class AbstractModel(nn.Module):
     def predict(self, w):
         y = self.forward(w, return_embedding=False)
         indices = torch.argmax(y, dim=1)
-        return self.encoder(indices)
+        return self.encoder.inverse_transform(indices)

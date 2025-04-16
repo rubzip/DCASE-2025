@@ -49,4 +49,4 @@ class LogMelSpectrogram(torch.nn.Module):
 #        if augment:
 #            mel = self.mel_augment(mel)
 #        log_mel = self.amplitude_to_db(mel)
-        return log_mel
+        return log_mel.unsqueeze(1)
